@@ -3,6 +3,7 @@
 ROOT="${PWD}"
 REPOSITORIES=(
     'frameworks/base'
+    'packages/apps/Dialer'
     'packages/apps/Settings'
 )
 
