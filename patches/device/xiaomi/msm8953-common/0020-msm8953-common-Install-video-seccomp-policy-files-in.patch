@@ -1,0 +1,28 @@
+From 47baee081c440026c33df5370f39653702e35429 Mon Sep 17 00:00:00 2001
+From: Bharat Pawar <bpawar@codeaurora.org>
+Date: Thu, 30 Mar 2017 11:12:57 +0530
+Subject: [PATCH 20/21] msm8953-common: Install video seccomp policy files in
+ /vendor
+
+Vendor extended policy files are separated from the aosp
+and will now reside in /vendor
+
+Change-Id: I558e4f5461ff007745ab1598cbbca94bf5553fdd
+---
+ seccomp/mediacodec-seccomp.policy | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/seccomp/mediacodec-seccomp.policy b/seccomp/mediacodec-seccomp.policy
+index 73f7379..81d042b 100755
+--- a/seccomp/mediacodec-seccomp.policy
++++ b/seccomp/mediacodec-seccomp.policy
+@@ -7,5 +7,6 @@ recvfrom: 1
+ _llseek: 1
+ sysinfo: 1
+ getcwd: 1
++getdents64: 1
+ inotify_init1: 1
+ inotify_add_watch: 1
+-- 
+2.7.4
+

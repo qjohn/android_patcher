@@ -1,0 +1,29 @@
+From c26843cc5b6646e522a96177c6c37c0aba23177d Mon Sep 17 00:00:00 2001
+From: Albert I <krascgq@outlook.co.id>
+Date: Sat, 14 Jul 2018 16:17:36 +0800
+Subject: [PATCH 4/4] mido: This device is first launched with MIUI 8.1 based
+ Android 6.0.1
+
+* Inherit correct Makefile
+
+Signed-off-by: Albert I <krascgq@outlook.co.id>
+---
+ device.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/device.mk b/device.mk
+index 96172c5..e284a04 100644
+--- a/device.mk
++++ b/device.mk
+@@ -15,7 +15,7 @@
+ #
+ 
+ $(call inherit-product, vendor/xiaomi/mido/mido-vendor.mk)
+-$(call inherit-product, $(SRC_TARGET_DIR)/product/product_launched_with_n.mk)
++$(call inherit-product, $(SRC_TARGET_DIR)/product/product_launched_with_m.mk)
+ 
+ # Overlay
+ DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
+-- 
+2.7.4
+

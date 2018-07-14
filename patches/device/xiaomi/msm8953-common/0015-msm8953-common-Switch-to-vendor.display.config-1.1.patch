@@ -1,0 +1,45 @@
+From 73c70e626e20fedef83f93b1d811e604bc972013 Mon Sep 17 00:00:00 2001
+From: Bruno Martins <bgcngm@gmail.com>
+Date: Fri, 16 Feb 2018 21:08:00 +0000
+Subject: [PATCH 15/21] msm8953-common: Switch to vendor.display.config 1.1
+
+ * No need to explicitly build the packages anymore,
+   since they're now display HAL dependencies.
+
+Change-Id: Ied3be4c1e5fc7e01e0426268fb219c61a4be86e9
+---
+ manifest.xml | 2 +-
+ msm8953.mk   | 4 +---
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/manifest.xml b/manifest.xml
+index ecaaf76..ae86c14 100644
+--- a/manifest.xml
++++ b/manifest.xml
+@@ -358,7 +358,7 @@
+     <hal format="hidl">
+         <name>vendor.display.config</name>
+         <transport>hwbinder</transport>
+-        <version>1.0</version>
++        <version>1.1</version>
+         <interface>
+             <name>IDisplayConfig</name>
+             <instance>default</instance>
+diff --git a/msm8953.mk b/msm8953.mk
+index 491d3dc..3ccc021 100644
+--- a/msm8953.mk
++++ b/msm8953.mk
+@@ -152,9 +152,7 @@ PRODUCT_PACKAGES += \
+     liboverlay \
+     libqdMetaData.system \
+     libgenlock \
+-    libtinyxml \
+-    vendor.display.config@1.0 \
+-    vendor.display.config@1.0_vendor
++    libtinyxml
+ 
+ # Doze mode
+ PRODUCT_PACKAGES += \
+-- 
+2.7.4
+

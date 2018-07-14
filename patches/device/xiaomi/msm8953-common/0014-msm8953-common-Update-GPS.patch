@@ -1,0 +1,30 @@
+From 12f5f3b17c9f85697ef4efd383dc18a209e65a88 Mon Sep 17 00:00:00 2001
+From: qjohn <townex22@gmail.com>
+Date: Mon, 15 Oct 2018 13:44:04 +0700
+Subject: [PATCH 14/21] msm8953-common: Update GPS
+
+ * Tag LA.UM.6.6.r1-09000-89xx.0
+
+Change-Id: I431d5e5e5f6298b7fcc3a48972752ee3aee2fb51
+---
+ gps/gnss/GnssAdapter.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gps/gnss/GnssAdapter.cpp b/gps/gnss/GnssAdapter.cpp
+index cdda01d..4aff05a 100644
+--- a/gps/gnss/GnssAdapter.cpp
++++ b/gps/gnss/GnssAdapter.cpp
+@@ -3018,8 +3018,8 @@ bool GnssAdapter::getDebugReport(GnssDebugReport& r)
+               (int64_t)(reports.mTimeAndClock.back().mGpsTowMs);
+ 
+         r.mTime.timeUncertaintyNs =
+-            (float)((reports.mTimeAndClock.back().mTimeUnc +
+-                     reports.mTimeAndClock.back().mLeapSecUnc)*1000);
++                ((float)(reports.mTimeAndClock.back().mTimeUnc) +
++                 (float)(reports.mTimeAndClock.back().mLeapSecUnc))*1000.0f;
+         r.mTime.frequencyUncertaintyNsPerSec =
+             (float)(reports.mTimeAndClock.back().mClockFreqBiasUnc);
+         LOC_LOGV("getDebugReport - timeestimate=%" PRIu64 " unc=%f frequnc=%f",
+-- 
+2.7.4
+

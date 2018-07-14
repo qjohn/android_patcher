@@ -1,0 +1,481 @@
+From ebf0849203b881fb9e2e61764343a0bfcbcef53f Mon Sep 17 00:00:00 2001
+From: qjohn <townex22@gmail.com>
+Date: Mon, 15 Oct 2018 13:36:09 +0700
+Subject: [PATCH 12/21] msm8953-common: Update IPACM
+
+ * Tag LA.UM.6.6.r1-09000-89xx.0
+
+Change-Id: I6eb1e8c4ee87041eb185e903bccb2fe77738f941
+---
+ data-ipa-cfg-mgr/ipacm/inc/IPACM_OffloadManager.h  |  1 +
+ data-ipa-cfg-mgr/ipacm/src/IPACM_CmdQueue.cpp      | 10 ++-
+ .../ipacm/src/IPACM_ConntrackClient.cpp            |  6 +-
+ .../ipacm/src/IPACM_ConntrackListener.cpp          | 74 ++++++++++------------
+ .../ipacm/src/IPACM_Conntrack_NATApp.cpp           | 23 ++++---
+ data-ipa-cfg-mgr/ipacm/src/IPACM_EvtDispatcher.cpp |  6 +-
+ data-ipa-cfg-mgr/ipacm/src/IPACM_Filtering.cpp     | 25 ++++----
+ data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp           | 19 +++++-
+ .../ipacm/src/IPACM_OffloadManager.cpp             | 10 +++
+ data-ipa-cfg-mgr/ipacm/src/IPACM_Wlan.cpp          | 12 ++++
+ data-ipa-cfg-mgr/ipanat/src/Android.mk             |  1 +
+ 11 files changed, 117 insertions(+), 70 deletions(-)
+
+diff --git a/data-ipa-cfg-mgr/ipacm/inc/IPACM_OffloadManager.h b/data-ipa-cfg-mgr/ipacm/inc/IPACM_OffloadManager.h
+index bade0aa..5100ce3 100644
+--- a/data-ipa-cfg-mgr/ipacm/inc/IPACM_OffloadManager.h
++++ b/data-ipa-cfg-mgr/ipacm/inc/IPACM_OffloadManager.h
+@@ -114,6 +114,7 @@ private:
+ 
+ 	/* cache the add_downstream events if netdev is not ready */
+ 	framework_event_cache event_cache[MAX_EVENT_CACHE];
++	bool is_cache;
+ 
+ 	/* latest update cache entry */
+ 	int latest_cache_index;
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_CmdQueue.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_CmdQueue.cpp
+index 812a768..cab78e2 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_CmdQueue.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_CmdQueue.cpp
+@@ -165,8 +165,12 @@ void* MessageQueue::Process(void *param)
+ 		}
+ 		else
+ 		{
+-			IPACMDBG("Get event %s from internal queue.\n",
+-				IPACM_Iface::ipacmcfg->getEventName(item->evt.data.event));
++			eventName = IPACM_Iface::ipacmcfg->getEventName(item->evt.data.event);
++			if (eventName != NULL)
++			{
++				IPACMDBG("Get event %s from internal queue.\n",
++					eventName);
++			}
+ 		}
+ 
+ 		if(item == NULL)
+@@ -201,7 +205,7 @@ void* MessageQueue::Process(void *param)
+ 				return NULL;
+ 			}
+ 
+-			IPACMDBG("Processing item %p event ID: %d\n",item,item->evt.data.event);
++			IPACMDBG("Processing item %pK event ID: %d\n",item,item->evt.data.event);
+ 			item->evt.callback_ptr(&item->evt.data);
+ 			delete item;
+ 			item = NULL;
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_ConntrackClient.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_ConntrackClient.cpp
+index 3eab6fa..8a2499c 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_ConntrackClient.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_ConntrackClient.cpp
+@@ -1,5 +1,5 @@
+ /*
+-Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
++Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+@@ -177,8 +177,6 @@ int IPACM_ConntrackClient::IPA_Conntrack_Filters_Ignore_Bridge_Addrs
+ 	/* retrieve bridge interface ipv4 address */
+ 	memset(&ifr, 0, sizeof(struct ifreq));
+ 	ifr.ifr_addr.sa_family = AF_INET;
+-	(void)strlcpy(ifr.ifr_name, IPACM_Iface::ipacmcfg->ipa_virtual_iface_name, sizeof(ifr.ifr_name));
+-	IPACMDBG("bridge interface name (%s)\n", ifr.ifr_name);
+ 
+ 	if(strlen(IPACM_Iface::ipacmcfg->ipa_virtual_iface_name) >= sizeof(ifr.ifr_name))
+ 	{
+@@ -187,6 +185,8 @@ int IPACM_ConntrackClient::IPA_Conntrack_Filters_Ignore_Bridge_Addrs
+ 		close(fd);
+ 		return -1;
+ 	}
++	(void)strlcpy(ifr.ifr_name, IPACM_Iface::ipacmcfg->ipa_virtual_iface_name, sizeof(ifr.ifr_name));
++	IPACMDBG("bridge interface name (%s)\n", ifr.ifr_name);
+ 
+ 	ret = ioctl(fd, SIOCGIFADDR, &ifr);
+ 	if (ret < 0)
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_ConntrackListener.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_ConntrackListener.cpp
+index 18f7e6b..b7bb95d 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_ConntrackListener.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_ConntrackListener.cpp
+@@ -1,5 +1,6 @@
+ /*
+-Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
++Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
++
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+@@ -1037,9 +1038,9 @@ void IPACM_ConntrackListener::ProcessTCPorUDPMsg(
+ 	 nat_entry.ct = ct;
+ 	 nat_entry.type = type;
+ 
+- 	 memset(&rule, 0, sizeof(rule));
+-	 IPACMDBG("Received type:%d with proto:%d\n", type, l4proto);
+-	 status = nfct_get_attr_u32(ct, ATTR_STATUS);
++	memset(&rule, 0, sizeof(rule));
++	IPACMDBG("Received type:%d with proto:%d\n", type, l4proto);
++	status = nfct_get_attr_u32(ct, ATTR_STATUS);
+ 
+ 	 /* Retrieve Protocol */
+ 	 rule.protocol = nfct_get_attr_u8(ct, ATTR_REPL_L4PROTO);
+@@ -1089,47 +1090,40 @@ void IPACM_ConntrackListener::ProcessTCPorUDPMsg(
+ #ifdef CT_OPT
+ 			HandleLan2Lan(ct, type, &rule);
+ #endif
+-			return;
++		 	IPACMDBG("Neither source Nor destination nat\n");
++		 	goto IGNORE;
+ 		}
+-	 }
++	}
+ 
+-	 if(IPS_DST_NAT == status || IPS_SRC_NAT == status)
+-	 {
+-		 PopulateTCPorUDPEntry(ct, status, &rule);
+-		 rule.public_ip = wan_ipaddr;
+-	 }
+-	 else
+-	 {
+-		 IPACMDBG("Neither source Nor destination nat\n");
+-		 goto IGNORE;
+-	 }
++	PopulateTCPorUDPEntry(ct, status, &rule);
++	rule.public_ip = wan_ipaddr;
+ 
+-	 if (rule.private_ip != wan_ipaddr)
+-	 {
+-		 isAdd = AddIface(&rule, &nat_entry.isTempEntry);
+-		 if (!isAdd)
+-		 {
+-			 goto IGNORE;
+-		 }
+-	 }
+-	 else
+-	 {
+-		 if (isStaMode)
+-		 {
+-			 IPACMDBG("In STA mode, ignore connections destinated to STA interface\n");
+-			 goto IGNORE;
+-		 }
++	if (rule.private_ip != wan_ipaddr)
++	{
++		isAdd = AddIface(&rule, &nat_entry.isTempEntry);
++		if (!isAdd)
++		{
++			goto IGNORE;
++		}
++	}
++	else
++	{
++		if (isStaMode)
++		{
++			IPACMDBG("In STA mode, ignore connections destinated to STA interface\n");
++			goto IGNORE;
++		}
+ 
+-		 IPACMDBG("For embedded connections add dummy nat rule\n");
+-		 IPACMDBG("Change private port %d to %d\n",
+-				  rule.private_port, rule.public_port);
+-		 rule.private_port = rule.public_port;
+-	 }
++		IPACMDBG("For embedded connections add dummy nat rule\n");
++		IPACMDBG("Change private port %d to %d\n",
++				rule.private_port, rule.public_port);
++		rule.private_port = rule.public_port;
++	}
+ 
+-	 CheckSTAClient(&rule, &nat_entry.isTempEntry);
+-	 nat_entry.rule = &rule;
+-	 AddORDeleteNatEntry(&nat_entry);
+-	 return;
++	CheckSTAClient(&rule, &nat_entry.isTempEntry);
++	nat_entry.rule = &rule;
++	AddORDeleteNatEntry(&nat_entry);
++	return;
+ 
+ IGNORE:
+ 	IPACMDBG_H("ignoring below Nat Entry\n");
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_Conntrack_NATApp.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_Conntrack_NATApp.cpp
+index c13c48e..04cdd16 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_Conntrack_NATApp.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_Conntrack_NATApp.cpp
+@@ -1,5 +1,5 @@
+ /*
+-Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
++Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+@@ -90,11 +90,7 @@ int NatApp::Init(void)
+ 		}
+ 		memset(pALGPorts, 0, sizeof(ipacm_alg) * nALGPort);
+ 
+-		if(pConfig->GetAlgPorts(nALGPort, pALGPorts) != 0)
+-		{
+-			IPACMERR("Unable to retrieve ALG prots\n");
+-			goto fail;
+-		}
++		pConfig->GetAlgPorts(nALGPort, pALGPorts);
+ 
+ 		IPACMDBG("Printing %d alg ports information\n", nALGPort);
+ 		for(int cnt=0; cnt<nALGPort; cnt++)
+@@ -102,12 +98,23 @@ int NatApp::Init(void)
+ 			IPACMDBG("%d: Proto[%d], port[%d]\n", cnt, pALGPorts[cnt].protocol, pALGPorts[cnt].port);
+ 		}
+ 	}
++	else
++	{
++		IPACMERR("Unable to retrieve ALG prot count\n");
++		goto fail;
++	}
+ 
+ 	return 0;
+ 
+ fail:
+-	free(cache);
+-	free(pALGPorts);
++	if(cache != NULL)
++	{
++		free(cache);
++	}
++	if(pALGPorts != NULL)
++	{
++		free(pALGPorts);
++	}
+ 	return -1;
+ }
+ 
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_EvtDispatcher.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_EvtDispatcher.cpp
+index edb5901..2914f66 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_EvtDispatcher.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_EvtDispatcher.cpp
+@@ -1,5 +1,5 @@
+ /* 
+-Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
++Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+@@ -92,7 +92,7 @@ int IPACM_EvtDispatcher::PostEvt
+ 
+ 	IPACMDBG("Enqueing item\n");
+ 	MsgQueue->enqueue(item);
+-	IPACMDBG("Enqueued item %p\n", item);
++	IPACMDBG("Enqueued item %pK\n", item);
+ 
+ 	if(pthread_cond_signal(&cond_var) != 0)
+ 	{
+@@ -141,7 +141,7 @@ void IPACM_EvtDispatcher::ProcessEvt(ipacm_cmd_q_data *data)
+ 			
+ 	if(data->evt_data != NULL)
+ 	{
+-		IPACMDBG("free the event:%d data: %p\n", data->event, data->evt_data);
++		IPACMDBG("free the event:%d data: %pK\n", data->event, data->evt_data);
+ 		free(data->evt_data);
+ 	}
+ 	return;
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_Filtering.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_Filtering.cpp
+index 210814f..e7694b5 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_Filtering.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_Filtering.cpp
+@@ -1,5 +1,5 @@
+ /*
+-Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
++Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+@@ -87,7 +87,7 @@ bool IPACM_Filtering::AddFilteringRule(struct ipa_ioc_add_flt_rule const *ruleTa
+ 	retval = ioctl(fd, IPA_IOC_ADD_FLT_RULE, ruleTable);
+ 	if (retval != 0)
+ 	{
+-		IPACMERR("Failed adding Filtering rule %p\n", ruleTable);
++		IPACMERR("Failed adding Filtering rule %pK\n", ruleTable);
+ 		PERROR("unable to add filter rule:");
+ 
+ 		for (int cnt = 0; cnt < ruleTable->num_rules; cnt++)
+@@ -110,7 +110,7 @@ bool IPACM_Filtering::AddFilteringRule(struct ipa_ioc_add_flt_rule const *ruleTa
+ 		}
+ 	}
+ 
+-	IPACMDBG("Added Filtering rule %p\n", ruleTable);
++	IPACMDBG("Added Filtering rule %pK\n", ruleTable);
+ 	return true;
+ }
+ 
+@@ -138,10 +138,13 @@ bool IPACM_Filtering::AddFilteringRuleAfter(struct ipa_ioc_add_flt_rule_after co
+ 
+ 	if (retval != 0)
+ 	{
+-		IPACMERR("Failed adding Filtering rule %p\n", ruleTable);
++		IPACMERR("Failed adding Filtering rule %pK\n", ruleTable);
+ 		return false;
+ 	}
+-	IPACMDBG("Added Filtering rule %p\n", ruleTable);
++	IPACMDBG("Added Filtering rule %pK\n", ruleTable);
++#else
++	if (ruleTable)
++		IPACMERR("Not support adding Filtering rule %pK\n", ruleTable);
+ #endif
+ 	return true;
+ }
+@@ -153,11 +156,11 @@ bool IPACM_Filtering::DeleteFilteringRule(struct ipa_ioc_del_flt_rule *ruleTable
+ 	retval = ioctl(fd, IPA_IOC_DEL_FLT_RULE, ruleTable);
+ 	if (retval != 0)
+ 	{
+-		IPACMERR("Failed deleting Filtering rule %p\n", ruleTable);
++		IPACMERR("Failed deleting Filtering rule %pK\n", ruleTable);
+ 		return false;
+ 	}
+ 
+-	IPACMDBG("Deleted Filtering rule %p\n", ruleTable);
++	IPACMDBG("Deleted Filtering rule %pK\n", ruleTable);
+ 	return true;
+ }
+ 
+@@ -447,7 +450,7 @@ bool IPACM_Filtering::AddWanDLFilteringRule(struct ipa_ioc_add_flt_rule const *r
+ 		ret = ioctl(fd_wwan_ioctl, WAN_IOC_ADD_FLT_RULE_EX, &qmi_rule_ex_msg);
+ 		if (ret != 0)
+ 		{
+-			IPACMERR("Failed adding Filtering rule %p with ret %d\n ", &qmi_rule_ex_msg, ret);
++			IPACMERR("Failed adding Filtering rule %pK with ret %d\n ", &qmi_rule_ex_msg, ret);
+ 			close(fd_wwan_ioctl);
+ 			return false;
+ 		}
+@@ -471,12 +474,12 @@ bool IPACM_Filtering::SendFilteringRuleIndex(struct ipa_fltr_installed_notif_req
+ 	ret = ioctl(fd_wwan_ioctl, WAN_IOC_ADD_FLT_RULE_INDEX, table);
+ 	if (ret != 0)
+ 	{
+-		IPACMERR("Failed adding filtering rule index %p with ret %d\n", table, ret);
++		IPACMERR("Failed adding filtering rule index %pK with ret %d\n", table, ret);
+ 		close(fd_wwan_ioctl);
+ 		return false;
+ 	}
+ 
+-	IPACMDBG("Added Filtering rule index %p\n", table);
++	IPACMDBG("Added Filtering rule index %pK\n", table);
+ 	close(fd_wwan_ioctl);
+ 	return true;
+ }
+@@ -517,7 +520,7 @@ bool IPACM_Filtering::ModifyFilteringRule(struct ipa_ioc_mdfy_flt_rule* ruleTabl
+ 	ret = ioctl(fd, IPA_IOC_MDFY_FLT_RULE, ruleTable);
+ 	if (ret != 0)
+ 	{
+-		IPACMERR("Failed modifying filtering rule %p\n", ruleTable);
++		IPACMERR("Failed modifying filtering rule %pK\n", ruleTable);
+ 
+ 		for (i = 0; i < ruleTable->num_rules; i++)
+ 		{
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp
+index afb1f0d..0391fbe 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp
+@@ -447,6 +447,18 @@ void IPACM_Lan::event_callback(ipa_cm_event_id event, void *param)
+ 						} else {
+ 							IPACMDBG_H("Wan_V6 haven't up yet\n");
+ 						}
++#else
++						/* check if Upstream was set before */
++						if (IPACM_Wan::isWanUP(ipa_if_num))
++						{
++							IPACMDBG_H("Upstream was set previously for ipv4, change is_upstream_set flag\n");
++							is_upstream_set[IPA_IP_v4] = true;
++						}
++						if (IPACM_Wan::isWanUP_V6(ipa_if_num))
++						{
++							IPACMDBG_H("Upstream was set previously for ipv6, change is_upstream_set flag\n");
++							is_upstream_set[IPA_IP_v6] = true;
++						}
+ #endif
+ 						/* Post event to NAT */
+ 						if (data->iptype == IPA_IP_v4)
+@@ -3250,7 +3262,8 @@ int IPACM_Lan::handle_uplink_filter_rule(ipacm_ext_prop *prop, ipa_ip_type iptyp
+ 
+ #ifdef FEATURE_IPACM_HAL
+ 		/* add prefix equation in modem UL rules */
+-		if(iptype == IPA_IP_v4 && flt_rule_entry.rule.eq_attrib.num_offset_meq_32 < IPA_IPFLTR_NUM_MEQ_32_EQNS)
++		if(iptype == IPA_IP_v4 && (flt_rule_entry.rule.eq_attrib.num_offset_meq_32 >= 0)
++			&& (flt_rule_entry.rule.eq_attrib.num_offset_meq_32 < IPA_IPFLTR_NUM_MEQ_32_EQNS))
+ 		{
+ 			flt_rule_entry.rule.eq_attrib.num_offset_meq_32++;
+ 			eq_index = flt_rule_entry.rule.eq_attrib.num_offset_meq_32 - 1;
+@@ -3284,7 +3297,9 @@ int IPACM_Lan::handle_uplink_filter_rule(ipacm_ext_prop *prop, ipa_ip_type iptyp
+ 		}
+ 		else
+ 		{
+-			if (flt_rule_entry.rule.eq_attrib.num_offset_meq_128 < IPA_IPFLTR_NUM_MEQ_128_EQNS)
++			if ((flt_rule_entry.rule.eq_attrib.num_offset_meq_128 >= 0) &&
++				(flt_rule_entry.rule.eq_attrib.num_offset_meq_128 
++					< IPA_IPFLTR_NUM_MEQ_128_EQNS))
+ 			{
+ 				flt_rule_entry.rule.eq_attrib.num_offset_meq_128++;
+ 				eq_index = flt_rule_entry.rule.eq_attrib.num_offset_meq_128 - 1;
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_OffloadManager.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_OffloadManager.cpp
+index 93a7dd4..caf040c 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_OffloadManager.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_OffloadManager.cpp
+@@ -61,6 +61,7 @@ IPACM_OffloadManager::IPACM_OffloadManager()
+ 	latest_cache_index = 0;
+ 	elrInstance = NULL;
+ 	touInstance = NULL;
++	is_cache = false;
+ 	return ;
+ }
+ 
+@@ -362,6 +363,14 @@ RET IPACM_OffloadManager::setUpstream(const char *upstream_name, const Prefix& g
+ 	if(upstream_name == NULL)
+ 	{
+ 		if (default_gw_index == INVALID_IFACE) {
++			for (index = 0; index < MAX_EVENT_CACHE; index++) {
++				if (event_cache[index].valid == true &&
++					event_cache[index ].event == IPA_WAN_UPSTREAM_ROUTE_ADD_EVENT) {
++					event_cache[index].valid = false;
++					memset(event_cache, 0, MAX_EVENT_CACHE*sizeof(framework_event_cache));
++					return SUCCESS;
++				}
++			}
+ 			IPACMERR("no previous upstream set before\n");
+ 			return FAIL_INPUT_CHECK;
+ 		}
+@@ -435,6 +444,7 @@ RET IPACM_OffloadManager::setUpstream(const char *upstream_name, const Prefix& g
+ 					return FAIL_HARDWARE;
+ 				}
+ 			}
++			is_cache = true;
+ 			return SUCCESS;
+ 		}
+ 
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_Wlan.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_Wlan.cpp
+index 307a788..eea2f00 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_Wlan.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_Wlan.cpp
+@@ -309,6 +309,18 @@ void IPACM_Wlan::event_callback(ipa_cm_event_id event, void *param)
+ 					} else {
+ 						IPACMDBG_H("Wan_V6 haven't up yet \n");
+ 					}
++#else
++					/* check if Upstream was set before */
++					if (IPACM_Wan::isWanUP(ipa_if_num))
++					{
++						IPACMDBG_H("Upstream was set previously for ipv4, change is_upstream_set flag\n");
++						is_upstream_set[IPA_IP_v4] = true;
++					}
++					if (IPACM_Wan::isWanUP_V6(ipa_if_num))
++					{
++						IPACMDBG_H("Upstream was set previously for ipv6, change is_upstream_set flag\n");
++						is_upstream_set[IPA_IP_v6] = true;
++					}
+ #endif
+ 					/* checking if SW-RT_enable */
+ 					if (IPACM_Iface::ipacmcfg->ipa_sw_rt_enable == true)
+diff --git a/data-ipa-cfg-mgr/ipanat/src/Android.mk b/data-ipa-cfg-mgr/ipanat/src/Android.mk
+index 01873ce..cde602a 100644
+--- a/data-ipa-cfg-mgr/ipanat/src/Android.mk
++++ b/data-ipa-cfg-mgr/ipanat/src/Android.mk
+@@ -12,6 +12,7 @@ LOCAL_SRC_FILES := ipa_nat_drv.c \
+ 
+ 
+ LOCAL_MODULE_PATH_64 := $(TARGET_OUT_VENDOR)/lib64
++LOCAL_MODULE_PATH_32 := $(TARGET_OUT_VENDOR)/lib
+ LOCAL_CFLAGS := -DDEBUG -Wall -Werror
+ LOCAL_CFLAGS += -DFEATURE_IPA_ANDROID
+ LOCAL_MODULE := libipanat
+-- 
+2.7.4
+

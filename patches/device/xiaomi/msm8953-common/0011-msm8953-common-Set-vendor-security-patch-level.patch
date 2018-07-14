@@ -1,0 +1,38 @@
+From 0a5fad3ed4c300707eb6f46de53d7f0a5c06a2a7 Mon Sep 17 00:00:00 2001
+From: Albert I <krascgq@outlook.co.id>
+Date: Sat, 14 Jul 2018 20:10:41 +0800
+Subject: [PATCH 11/21] msm8953-common: Set vendor security patch level
+
+* Required by Trust
+* Taken from tissot OPM1.171019.026.V9.6.4.0.ODHMIFE
+* Properly set vendor security patch level
+
+Change-Id: Ib01668954dddf0905d7b222f3636f165114c8229
+Signed-off-by: Albert I <krascgq@outlook.co.id>
+---
+ prop.mk | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/prop.mk b/prop.mk
+index 63b16c5..b45b90d 100644
+--- a/prop.mk
++++ b/prop.mk
+@@ -169,6 +169,15 @@ ro.telephony.default_network=22,20 \
+ service.qti.ims.enabled=1 \
+ telephony.lteOnCdmaDevice=1
+ 
++# Security patch level
++ifneq ($(BOARD_VENDORIMAGE_PARTITION_SIZE),)
++PRODUCT_PROPERTY_OVERRIDES += \
++ro.vendor.build.security_patch=2018-07-01
++else
++PRODUCT_PROPERTY_OVERRIDES += \
++ro.lineage.build.vendor_security_patch=2018-07-01
++endif
++
+ # Time Services
+ PRODUCT_PROPERTY_OVERRIDES += \
+ persist.timed.enable=true
+-- 
+2.7.4
+

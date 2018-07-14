@@ -1,0 +1,68 @@
+From e2312364dabe65d23ecde2c64d33b58a9b76902a Mon Sep 17 00:00:00 2001
+From: Slava Vidanov <vidslava@yandex.ru>
+Date: Mon, 17 Sep 2018 16:37:55 +0300
+Subject: [PATCH 02/21] msm8953-common: init: Remove
+ init_alarm_boot_properties();
+
+This is no longer need.
+QTI powerOffAlarm interface stores alarm data in persist/alarm/data instead powerOffAlarmInstance and powerOffAlarmSet.
+QTI powerOffAlarm turn on the phone one minute before the event.
+
+Change-Id: I1980e15cf2749ba79bf728e8f29f7a7ba571243e
+---
+ init/init_msm8953.cpp | 32 --------------------------------
+ 1 file changed, 32 deletions(-)
+
+diff --git a/init/init_msm8953.cpp b/init/init_msm8953.cpp
+index c3679d9..7953130 100644
+--- a/init/init_msm8953.cpp
++++ b/init/init_msm8953.cpp
+@@ -39,37 +39,6 @@ char const *heapminfree;
+ 
+ using android::init::property_set;
+ 
+-static void init_alarm_boot_properties()
+-{
+-    int boot_reason;
+-    FILE *fp;
+-
+-    fp = fopen("/proc/sys/kernel/boot_reason", "r");
+-    fscanf(fp, "%d", &boot_reason);
+-    fclose(fp);
+-
+-    /*
+-     * Setup ro.alarm_boot value to true when it is RTC triggered boot up
+-     * For existing PMIC chips, the following mapping applies
+-     * for the value of boot_reason:
+-     *
+-     * 0 -> unknown
+-     * 1 -> hard reset
+-     * 2 -> sudden momentary power loss (SMPL)
+-     * 3 -> real time clock (RTC)
+-     * 4 -> DC charger inserted
+-     * 5 -> USB charger inserted
+-     * 6 -> PON1 pin toggled (for secondary PMICs)
+-     * 7 -> CBLPWR_N pin toggled (for external power supply)
+-     * 8 -> KPDPWR_N pin toggled (power key pressed)
+-     */
+-     if (boot_reason == 3) {
+-        property_set("ro.alarm_boot", "true");
+-     } else {
+-        property_set("ro.alarm_boot", "false");
+-     }
+-}
+-
+ void check_device()
+ {
+     struct sysinfo sys;
+@@ -89,7 +58,6 @@ void check_device()
+ 
+ void vendor_load_properties()
+ {
+-    init_alarm_boot_properties();
+     check_device();
+ 
+     property_set("dalvik.vm.heapstartsize", "16m");
+-- 
+2.7.4
+

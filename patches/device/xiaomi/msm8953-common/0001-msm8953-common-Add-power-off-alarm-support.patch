@@ -1,0 +1,54 @@
+From ce7e974937b724972d8ee8f8f982fdba3f07b054 Mon Sep 17 00:00:00 2001
+From: Demon Singur <demonsingur@gmail.com>
+Date: Wed, 25 Jul 2018 14:21:59 +0000
+Subject: [PATCH 01/21] msm8953-common: Add power-off alarm support
+
+Change-Id: Id1d0be0e6dca7faddd591580fa0b928b13859ede
+---
+ manifest.xml             | 9 +++++++++
+ proprietary-files-qc.txt | 9 +++++++++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/manifest.xml b/manifest.xml
+index 01658dc..ecaaf76 100644
+--- a/manifest.xml
++++ b/manifest.xml
+@@ -401,6 +401,15 @@
+         </interface>
+     </hal>
+     <hal format="hidl">
++        <name>vendor.qti.hardware.alarm</name>
++        <transport>hwbinder</transport>
++        <version>1.0</version>
++        <interface>
++            <name>IAlarm</name>
++            <instance>default</instance>
++        </interface>
++    </hal>
++    <hal format="hidl">
+         <name>vendor.qti.hardware.perf</name>
+         <transport>hwbinder</transport>
+         <version>1.0</version>
+diff --git a/proprietary-files-qc.txt b/proprietary-files-qc.txt
+index 441e8a1..9473058 100644
+--- a/proprietary-files-qc.txt
++++ b/proprietary-files-qc.txt
+@@ -377,6 +377,15 @@ vendor/lib64/vendor.display.color@1.0_vendor.so
+ vendor/lib64/vendor.display.postproc@1.0_vendor.so
+ vendor/lib64/vendor.qti.hardware.qdutils_disp@1.0_vendor.so
+ 
++# Power-off alarm
++etc/permissions/vendor-qti-hardware-alarm.xml:vendor/etc/permissions/vendor-qti-hardware-alarm.xml
++-vendor/app/PowerOffAlarm/PowerOffAlarm.apk
++vendor/bin/hw/vendor.qti.hardware.alarm@1.0-service
++vendor/etc/init/vendor.qti.hardware.alarm@1.0-service.rc
++vendor/framework/vendor.qti.hardware.alarm-V1.0-java.jar
++vendor/lib64/hw/vendor.qti.hardware.alarm@1.0-impl.so
++vendor/lib64/vendor.qti.hardware.alarm@1.0.so
++
+ # Power-off charging daemon
+ -sbin/charger:sbin/chargeonlymode;rootfs|664dfa548b81cac348f1699222160f8d2b4d247c
+ 
+-- 
+2.7.4
+

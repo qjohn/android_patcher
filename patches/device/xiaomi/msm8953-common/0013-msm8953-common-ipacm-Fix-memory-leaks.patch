@@ -1,0 +1,62 @@
+From 99b3e5b725f15a20b0d1955d5c2f9ccbf842d909 Mon Sep 17 00:00:00 2001
+From: Antoine Giraudmaillet <antoine-g@live.fr>
+Date: Wed, 3 Jan 2018 23:39:19 +0000
+Subject: [PATCH 13/21] msm8953-common: ipacm: Fix memory leaks
+
+* Errors reported by CppCheck.
+
+Change-Id: I700e4c8ef6a4cb7f551e1d9c69f72d218b124dde
+---
+ data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp     | 1 +
+ data-ipa-cfg-mgr/ipacm/src/IPACM_Main.cpp    | 9 +++++----
+ data-ipa-cfg-mgr/ipacm/src/IPACM_Netlink.cpp | 1 +
+ 3 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp
+index 0391fbe..f74196f 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_Lan.cpp
+@@ -5505,6 +5505,7 @@ int IPACM_Lan::add_l2tp_flt_rule(ipa_ip_type iptype, uint8_t *dst_mac, uint32_t
+ 	if(m_routing.GetRoutingTable(&rt_tbl) == false)
+ 	{
+ 		IPACMERR("Failed to get routing table.\n");
++		free(pFilteringTable);
+ 		return IPACM_FAILURE;
+ 	}
+ 
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_Main.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_Main.cpp
+index d93cef6..76f805c 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_Main.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_Main.cpp
+@@ -405,11 +405,12 @@ void* ipa_driver_msg_notifier(void *param)
+ 			}
+ 			memcpy(event_ex, buffer + sizeof(struct ipa_msg_meta), length);
+ 			data_ex = (ipacm_event_data_wlan_ex *)malloc(sizeof(ipacm_event_data_wlan_ex) + event_ex_o.num_of_attribs * sizeof(ipa_wlan_hdr_attrib_val));
+-		    if (data_ex == NULL)
+-		    {
++			if (data_ex == NULL)
++			{
+ 				IPACMERR("unable to allocate memory for event data\n");
+-		    	return NULL;
+-		    }
++				free(event_ex);
++				return NULL;
++			}
+ 			data_ex->num_of_attribs = event_ex->num_of_attribs;
+ 
+ 			memcpy(data_ex->attribs,
+diff --git a/data-ipa-cfg-mgr/ipacm/src/IPACM_Netlink.cpp b/data-ipa-cfg-mgr/ipacm/src/IPACM_Netlink.cpp
+index e2ecd50..4ddf4bf 100644
+--- a/data-ipa-cfg-mgr/ipacm/src/IPACM_Netlink.cpp
++++ b/data-ipa-cfg-mgr/ipacm/src/IPACM_Netlink.cpp
+@@ -708,6 +708,7 @@ static int ipa_nl_decode_nlmsg
+ 					if(ret_val != IPACM_SUCCESS)
+ 					{
+ 						IPACMERR("Error while getting interface name\n");
++						free(data_fid);
+ 						return IPACM_FAILURE;
+ 					}
+ 					IPACMDBG("Got a usb link_up event (Interface %s, %d) \n", dev_name, msg_ptr->nl_link_info.metainfo.ifi_index);
+-- 
+2.7.4
+
