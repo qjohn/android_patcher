@@ -1,0 +1,32 @@
+From 489ab02aaca6dba382c05fc5ad8fe914ef0bf3a5 Mon Sep 17 00:00:00 2001
+From: Albert I <krascgq@outlook.co.id>
+Date: Thu, 14 Feb 2019 09:56:29 +0800
+Subject: [PATCH 2/5] msm8953-common: Explicitly disable rild OEM hook
+ implementation
+
+This has been deprecated on Pie and CAF has disabled it by default
+since LA.UM.7.4.r1-03000-8x98.0. However, many of ROMs ship AOSP and/or
+CAF RIL based on an older tag, so we have to explicitly set this for
+compatibility.
+
+Change-Id: I3429e755906186b963a53609411cb788cc6e31f0
+Signed-off-by: Albert I <krascgq@outlook.co.id>
+---
+ BoardConfigCommon.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/BoardConfigCommon.mk b/BoardConfigCommon.mk
+index 1f6d573..02635c3 100644
+--- a/BoardConfigCommon.mk
++++ b/BoardConfigCommon.mk
+@@ -180,6 +180,7 @@ BOARD_USES_QCOM_HARDWARE := true
+ # RIL
+ TARGET_PROVIDES_QTI_TELEPHONY_JAR := true
+ TARGET_RIL_VARIANT := caf
++DISABLE_RILD_OEM_HOOK := true
+ 
+ # Recovery
+ ifeq ($(AB_OTA_UPDATER), true)
+-- 
+2.7.4
+

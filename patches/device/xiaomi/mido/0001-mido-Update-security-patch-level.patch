@@ -1,0 +1,26 @@
+From def04210dab1fc9a5f4775328eed3643b4a362eb Mon Sep 17 00:00:00 2001
+From: qjohn <townex22@gmail.com>
+Date: Mon, 27 May 2019 17:26:44 +0700
+Subject: [PATCH 1/2] mido: Update security patch level
+
+Change-Id: I721d5ec01547ec6233372a1f67519aedeacc4e03
+---
+ BoardConfig.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/BoardConfig.mk b/BoardConfig.mk
+index 85bdd8f..139f8a7 100644
+--- a/BoardConfig.mk
++++ b/BoardConfig.mk
+@@ -47,7 +47,7 @@ BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED := true
+ PRODUCT_FULL_TREBLE_OVERRIDE := true
+ 
+ # Vendor Security Patch
+-VENDOR_SECURITY_PATCH := 2018-11-01
++VENDOR_SECURITY_PATCH := 2018-12-01
+ 
+ # Inherit from the proprietary version
+ -include vendor/xiaomi/mido/BoardConfigVendor.mk
+-- 
+2.7.4
+

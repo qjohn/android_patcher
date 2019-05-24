@@ -1,0 +1,35 @@
+From 945db5a5f615076280920cab93061a5991a6a6fc Mon Sep 17 00:00:00 2001
+From: Ethan Chen <intervigil@gmail.com>
+Date: Mon, 18 Feb 2019 22:34:24 -0800
+Subject: [PATCH 5/5] msm8953-common: Don't provide a module for libgpustats
+
+Change-Id: I39efbf1c447fbed83477496a00da3a3cab329bea
+---
+ proprietary-files-qc.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/proprietary-files-qc.txt b/proprietary-files-qc.txt
+index 8469ef0..0bb6e12 100644
+--- a/proprietary-files-qc.txt
++++ b/proprietary-files-qc.txt
+@@ -313,7 +313,7 @@ vendor/lib/libOmxQcelp13Dec.so
+ vendor/lib/libOmxVideoDSMode.so
+ vendor/lib/libOmxVpp.so
+ vendor/lib/libOmxWmaDec.so
+--vendor/lib/libgpustats.so
++vendor/lib/libgpustats.so
+ vendor/lib/libmm-color-convertor.so
+ vendor/lib/libvpplibrary.so
+ vendor/lib/libvqzip.so
+@@ -329,7 +329,7 @@ vendor/lib64/libOmxEvrcDec.so
+ vendor/lib64/libOmxQcelp13Dec.so
+ vendor/lib64/libOmxVpp.so
+ vendor/lib64/libOmxWmaDec.so
+--vendor/lib64/libgpustats.so
++vendor/lib64/libgpustats.so
+ vendor/lib64/libmm-color-convertor.so
+ vendor/lib64/libvpplibrary.so
+ 
+-- 
+2.7.4
+

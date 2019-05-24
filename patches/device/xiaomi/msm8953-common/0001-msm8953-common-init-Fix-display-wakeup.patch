@@ -1,0 +1,32 @@
+From 60a99631033b65286f61cb954d68e62da566e0fd Mon Sep 17 00:00:00 2001
+From: davidtrpcevski <trpcevski.david@gmail.com>
+Date: Fri, 4 Jan 2019 05:07:56 +0100
+Subject: [PATCH 1/5] msm8953-common: init: Fix display wakeup
+
+* Can be improved. Temporary fix. Fixes display and fingerprint wakeup delay
+  that we encounter on Pie.
+
+Change-Id: I80d6fb0e437eedd1f2fcbff714964f42466d752b
+Signed-off-by: davidtrpcevski <trpcevski.david@gmail.com>
+---
+ rootdir/init.qcom.rc | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/rootdir/init.qcom.rc b/rootdir/init.qcom.rc
+index e0e6305..78a049e 100644
+--- a/rootdir/init.qcom.rc
++++ b/rootdir/init.qcom.rc
+@@ -419,6 +419,10 @@ on property:sys.boot_completed=1
+     #WDSP FW boot sysfs node used by STHAL
+     chown media audio /sys/kernel/wdsp0/boot
+     chown media audio /sys/kernel/wcd_cpe0/fw_name
++    #Wakeup fix
++    chown system system /sys/devices/soc/qpnp-smbcharger-18/power_supply/battery/subsystem/bms/hi_power
++    chmod 0664 /sys/devices/soc/qpnp-smbcharger-18/power_supply/battery/subsystem/bms/hi_power
++    write /sys/devices/soc/qpnp-smbcharger-18/power_supply/battery/subsystem/bms/hi_power 1
+ 
+ on property:persist.vendor.radio.atfwd.start=false
+     stop vendor.atfwd
+-- 
+2.7.4
+

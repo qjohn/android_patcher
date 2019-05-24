@@ -1,0 +1,27 @@
+From 1294577e4e423ca850f0422b726c9a17b9164312 Mon Sep 17 00:00:00 2001
+From: TheScarastic <warabhishek@gmail.com>
+Date: Mon, 9 Jul 2018 20:58:42 +0530
+Subject: [PATCH 2/2] mido: Set IO scheduler to BFQ once boot is complete
+
+ * The kernel defaults to NOOP, which allows high throughput
+ * Switch to BFQ, once we are done booting up, to improve UX
+
+Change-Id: Iff7e24eba73a722c08e5e248ebced389223b0444
+---
+ rootdir/init.mido.rc | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/rootdir/init.mido.rc b/rootdir/init.mido.rc
+index c915252..822848c 100644
+--- a/rootdir/init.mido.rc
++++ b/rootdir/init.mido.rc
+@@ -34,3 +34,6 @@ service goodix_script /vendor/bin/init.goodix.sh
+     class late_start
+     user root
+     oneshot
++
++on property:dev.bootcomplete=1
++    setprop sys.io.scheduler "bfq"
+-- 
+2.7.4
+
